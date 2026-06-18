@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CivicConnect</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- ════ FIREBASE SDKS ════ -->
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+
+<style>
+  :root {
+    --co: #1D4ED8; /* CivicConnect Blue */
+    --co-hover: #1e3a8a;
+    --navy: #0F172A; 
+    --ctext: #0F172A; 
+    --cmuted: #64748B; 
+    --cborder: #E2E8F0; 
+    --cbg: #F8FAFC;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--cbg); 
+    color: var(--ctext);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ─── LIGHT BACKGROUND ─── */
+  .bg-pattern {
+    position: absolute; inset: 0;
+    background-image: radial-gradient(var(--cborder) 1px, transparent 1px);
+    background-size: 24px 24px;
+    z-index: 0;
+  }
+
+  .auth-wrapper {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 420px;
+    padding: 20px;
+    animation: fadeSlideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500;
+    color: var(--cmuted); text-decoration: none; margin-bottom: 24px; transition: color 0.2s;
+  }
+  .back-link:hover { color: var(--co); }
+  .back-link svg { width: 16px; height: 16px; }
+
+  /* ─── AUTH CARD ─── */
+  .auth-card {
+    background: #ffffff;
+    border: 1px solid var(--cborder);
+    border-radius: 16px;
+    box-shadow: 0 20px 40px -12px rgba(0,0,0,0.1);
+    overflow: hidden;
+  }
+
+  .auth-header {
+    background: #ffffff;
+    padding: 32px 32px 24px;
+    text-align: center;
+    border-bottom: 1px solid var(--cborder);
+  }
+  
+  .auth-logo { display: inline-flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 16px; }
+  .auth-logo-mark {
+    width: 32px; height: 32px; background: var(--co); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Poppins', sans-serif; font-size: 16px; font-weight: 800; color: #fff;
+  }
+  .auth-logo-text { font-family: 'Poppins', sans-serif; font-size: 20px; font-weight: 700; color: var(--ctext); letter-spacing: -0.5px; }
+
+  .auth-title { font-family: 'Poppins', sans-serif; font-size: 20px; font-weight: 600; color: var(--ctext); }
+  .auth-subtitle { font-size: 13px; color: var(--cmuted); margin-top: 6px; }
+
+  .auth-body { padding: 32px; }
+
+  .form-group { margin-bottom: 20px; }
+  .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--cmuted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  
+  .form-control {
+    width: 100%; height: 46px; padding: 0 16px; font-family: 'Inter', sans-serif; font-size: 14px;
+    color: var(--ctext); background: #fff; border: 1px solid var(--cborder); border-radius: 10px;
+    transition: all 0.2s; outline: none;
+  }
+  .form-control:focus { border-color: var(--co); box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15); }
+
+  .btn-primary {
+    width: 100%; height: 48px; background: var(--co); color: #fff; border: none; border-radius: 10px;
+    font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; display: flex; align-items: center; justify-content: center; margin-top: 12px;
+  }
+  .btn-primary:hover { background: var(--co-hover); }
+
+  .system-notice {
+    margin-top: 24px; padding: 12px; background: #FEF2F2; border: 1px solid #FECDD3; border-radius: 8px;
+    display: none; gap: 10px; align-items: flex-start; font-size: 12px; color: #BE123C; line-height: 1.5;
+  }
+  .system-notice.show { display: flex; }
+  .system-notice svg { flex-shrink: 0; margin-top: 2px; color: #E11D48; }
+
+</style>
+</head>
+<body>
+
+<div class="bg-pattern"></div>
+
+<div class="auth-wrapper">
+  
+  <a href="index.html" class="back-link">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    Return to Public Portal
+  </a>
+
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-logo">
+        <div class="auth-logo-mark">C</div>
+        <div class="auth-logo-text">CivicConnect</div>
+      </div>
+      <h1 class="auth-title">Agency Login</h1>
+      <p class="auth-subtitle">For official branch staff only.</p>
+    </div>
+
+    <div class="auth-body">
+      <form id="agencyLoginForm">
+        
+        <div class="form-group">
+          <label class="form-label">Agency Email</label>
+          <input type="email" id="loginEmail" class="form-control" placeholder="admin@agency.gov.ph" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" id="loginPass" class="form-control" placeholder="••••••••" required>
+        </div>
+
+        <button type="submit" class="btn-primary" id="loginBtn">Secure Login</button>
+
+      </form>
+
+      <div class="system-notice" id="errorBox">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div id="errorMsg">Authentication failed.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ════ FIREBASE INITIALIZATION & LOGIC ════ -->
+<script>
+  // YOUR FIREBASE CONFIG
+  const firebaseConfig = {
+    apiKey: "AIzaSyBl7Pu5rA2OrOMM8L_A_fQqiEex2H6cKGk",
+    authDomain: "civicconnect-933d3.firebaseapp.com",
+    projectId: "civicconnect-933d3",
+    storageBucket: "civicconnect-933d3.firebasestorage.app",
+    messagingSenderId: "326496710020",
+    appId: "1:326496710020:web:73b89f27349376367801d1"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  const loginForm = document.getElementById('agencyLoginForm');
+  const btn = document.getElementById('loginBtn');
+  const errorBox = document.getElementById('errorBox');
+  const errorMsg = document.getElementById('errorMsg');
+
+  function showError(message) {
+    btn.textContent = "Secure Login";
+    btn.style.opacity = "1";
+    errorMsg.innerHTML = message;
+    errorBox.classList.add('show');
+  }
+
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    errorBox.classList.remove('show');
+    btn.textContent = "Verifying Identity...";
+    btn.style.opacity = "0.7";
+
+    const email = document.getElementById('loginEmail').value;
+    const pass = document.getElementById('loginPass').value;
+
+    // STEP 1: Check The Vault (Firebase Auth)
+    auth.signInWithEmailAndPassword(email, pass)
+      .then((userCredential) => {
+        const user = userCredential.user;
+
+        // STEP 2: Check The Filing Cabinet (Firestore)
+        // We look for a tenant where the adminUser matches the email they logged in with
+        db.collection("tenants").where("adminUser", "==", email).get()
+          .then((querySnapshot) => {
+            
+            if (querySnapshot.empty) {
+              // They have a Firebase account, but no Tenant record! (Maybe they are a citizen)
+              auth.signOut();
+              showError("<strong>Access Denied.</strong> No agency record is associated with this email address.");
+              return;
+            }
+
+            // Get the tenant data
+            let tenantData = null;
+            querySnapshot.forEach((doc) => { tenantData = doc.data(); });
+
+            // STEP 3: Check if the Superadmin Suspended them
+            if (tenantData.status === "Suspended") {
+              auth.signOut();
+              showError("<strong>Account Suspended.</strong> Your agency access has been revoked by the system administrator.");
+              return;
+            }
+
+            // SUCCESS!
+            btn.textContent = "Access Granted";
+            btn.style.background = "#059669"; 
+            
+            // Move to the dashboard immediately
+            setTimeout(() => {
+              window.location.href = 'admin_dashboard.html'; 
+            }, 500);
+
+          })
+          .catch((error) => {
+            console.error("Database error:", error);
+            auth.signOut();
+            showError("Database connection error. Please try again.");
+          });
+
+      })
+      .catch((error) => {
+        console.error(error);
+        showError("<strong>Invalid credentials.</strong> Please check your email and password.");
+      });
+  });
+</script>
+
+</body>
+</html>

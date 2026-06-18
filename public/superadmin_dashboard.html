@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CivicConnect</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- ════ CHART.JS ════ -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- ════ FIREBASE SDKS ════ -->
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+<!-- ADDED FIRESTORE SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+
+<!-- ════ FIREBASE INITIALIZATION & BOUNCER ════ -->
+<script>
+  // Your specific Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyBl7Pu5rA2OrOMM8L_A_fQqiEex2H6cKGk",
+    authDomain: "civicconnect-933d3.firebaseapp.com",
+    projectId: "civicconnect-933d3",
+    storageBucket: "civicconnect-933d3.firebasestorage.app",
+    messagingSenderId: "326496710020",
+    appId: "1:326496710020:web:73b89f27349376367801d1"
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore(); // Initialize the Database
+
+  // The Bouncer
+  auth.onAuthStateChanged((user) => {
+    if (!user) {
+      window.location.replace('superadmin_login.html');
+    }
+  });
+</script>
+
+<style>
+  /* ═══════════════════════════════════════
+     DESIGN TOKENS (Superadmin Theme)
+  ═══════════════════════════════════════ */
+  :root {
+    --primary:      #F59E0B;
+    --primary-lt:   #FEF3C7;
+    --primary-bd:   rgba(245, 158, 11, 0.2);
+    --primary-dk:   #D97706;
+    --navy:         #0F172A;
+    --navy-md:      #1E293B;
+    --navy-dk:      #020617;
+    --page-bg:      #F8FAFC;
+    --surface:      #FFFFFF;
+    --surface-2:    #F1F5F9;
+    --surface-3:    #E2E8F0;
+    --text-1:       #0F172A;
+    --text-2:       #334155;
+    --text-3:       #64748B;
+    --border:       rgba(15, 23, 42, 0.08);
+    --border-md:    rgba(15, 23, 42, 0.15);
+    --radius-sm:    6px;
+    --radius-md:    10px;
+    --radius-lg:    16px;
+    --radius-xl:    24px;
+    --shadow-sm:    0 1px 3px rgba(0,0,0,0.05);
+    --shadow-md:    0 10px 25px rgba(0,0,0,0.08);
+    --ff-display:   'Poppins', sans-serif;
+    --ff-body:      'Inter', sans-serif;
+    --sidebar-w:    260px;
+    --topbar-h:     72px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; scroll-behavior: smooth; }
+  body { font-family: var(--ff-body); background: var(--page-bg); color: var(--text-1); min-height: 100vh; overflow-x: hidden; display: flex; }
+  button { font-family: var(--ff-body); cursor: pointer; border: none; background: none; }
+  a { text-decoration: none; color: inherit; }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .anim-0 { animation: fadeUp 0.4s cubic-bezier(0.22,1,0.36,1) both; }
+  .anim-1 { animation: fadeUp 0.4s 0.08s cubic-bezier(0.22,1,0.36,1) both; }
+  .anim-2 { animation: fadeUp 0.4s 0.16s cubic-bezier(0.22,1,0.36,1) both; }
+  .anim-3 { animation: fadeUp 0.4s 0.24s cubic-bezier(0.22,1,0.36,1) both; }
+
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.03em; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; }
+  .badge-active { background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; }
+  .badge-suspended { background: #FEF2F2; color: #E11D48; border: 1px solid #FECDD3; }
+
+  .sidebar { width: var(--sidebar-w); background: var(--navy-dk); color: #fff; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; display: flex; flex-direction: column; border-right: 1px solid rgba(255,255,255,0.05); }
+  .sidebar-header { height: var(--topbar-h); padding: 0 24px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .sidebar-logo { width: 32px; height: 32px; background: var(--primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: var(--ff-display); font-weight: 800; font-size: 16px; color: var(--navy-dk);}
+  .sidebar-brand { font-family: var(--ff-display); font-weight: 700; font-size: 18px; letter-spacing: -0.5px; }
+  .sys-context { margin: 24px 20px 16px; padding: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); }
+  .sys-label { font-size: 10px; font-weight: 600; color: var(--primary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+  .sys-name { font-family: var(--ff-display); font-size: 14px; font-weight: 600; color: #fff; line-height: 1.2; }
+  .nav-menu { padding: 0 12px; flex: 1; }
+  .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin-bottom: 4px; border-radius: var(--radius-md); color: rgba(255,255,255,0.6); font-size: 13.5px; font-weight: 500; transition: all 0.2s; cursor: pointer; text-decoration: none; }
+  .nav-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+  .nav-item.active { background: var(--primary); color: var(--navy-dk); font-weight: 600; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); }
+  .nav-item svg { width: 18px; height: 18px; opacity: 0.8; }
+  .nav-item.active svg { opacity: 1; }
+  .sidebar-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .logout-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 16px; border-radius: var(--radius-md); color: #FCA5A5; font-size: 13px; font-weight: 500; transition: background 0.2s; }
+  .logout-btn:hover { background: rgba(225, 29, 72, 0.15); color: #FECDD3; }
+
+  .main-wrapper { flex: 1; margin-left: var(--sidebar-w); display: flex; flex-direction: column; min-width: 0; }
+  .topbar { height: var(--topbar-h); background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 40px; position: sticky; top: 0; z-index: 90; }
+  .page-title { font-family: var(--ff-display); font-size: 20px; font-weight: 600; color: var(--text-1); letter-spacing: -0.5px; }
+  .topbar-right { display: flex; align-items: center; gap: 20px; }
+  .sys-status { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #059669; background: #ECFDF5; padding: 6px 12px; border-radius: 20px; border: 1px solid #A7F3D0;}
+  .sys-status-dot { width: 6px; height: 6px; background: #059669; border-radius: 50%; animation: pulse 2s infinite;}
+  @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+  .staff-profile { display: flex; align-items: center; gap: 12px; padding-left: 20px; border-left: 1px solid var(--border); }
+  .staff-info { text-align: right; }
+  .staff-name { font-size: 13px; font-weight: 600; color: var(--text-1); display: block; }
+  .staff-role { font-size: 11px; color: var(--primary-dk); font-weight: 600; text-transform: uppercase;}
+  .staff-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--primary-lt); color: var(--primary-dk); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+
+  .dash-body { padding: 32px 40px; max-width: 1400px; margin: 0 auto; width: 100%; }
+  .view-section { display: none; }
+  .view-section.active { display: block; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 32px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; display: flex; align-items: flex-start; justify-content: space-between; box-shadow: var(--shadow-sm); }
+  .stat-label { font-size: 12px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .stat-value { font-family: var(--ff-display); font-size: 32px; font-weight: 700; color: var(--text-1); line-height: 1; }
+  .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+  .sc-gold .stat-icon { background: var(--primary-lt); color: var(--primary-dk); }
+  .sc-blue .stat-icon { background: #EFF6FF; color: #1D4ED8; }
+  .sc-green .stat-icon { background: #ECFDF5; color: #059669; }
+  .sc-purple .stat-icon { background: #F5F3FF; color: #7C3AED; }
+
+  .section-hd { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 24px; }
+  .section-title { font-family: var(--ff-display); font-size: 20px; font-weight: 600; color: var(--text-1); margin-bottom: 4px;}
+  .section-subtitle { font-size: 13px; color: var(--text-3); }
+  .btn-primary { padding: 10px 20px; background: var(--primary); color: var(--navy-dk); border-radius: 10px; font-weight: 600; display: flex; align-items: center; gap: 8px; font-size: 13px; transition: background 0.2s;}
+  .btn-primary:hover { background: var(--primary-dk); color: #fff;}
+
+  .table-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; }
+  .table-controls { padding: 16px 24px; border-bottom: 1px solid var(--border); background: #FAFAFA; display: flex; gap: 12px;}
+  .table-search { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--border-md); border-radius: 8px; padding: 8px 12px; width: 300px; transition: all 0.2s; }
+  .table-search:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-bd); }
+  .table-search input { border: none; outline: none; font-family: var(--ff-body); font-size: 13px; width: 100%; }
+
+  table { width: 100%; border-collapse: collapse; text-align: left; }
+  th { padding: 16px 24px; font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); background: #FAFAFA; }
+  td { padding: 16px 24px; font-size: 14px; color: var(--text-1); border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover { background: var(--surface-2); }
+
+  .td-code { font-family: monospace; font-weight: 600; color: var(--text-2); background: var(--surface-3); padding: 4px 8px; border-radius: 6px; font-size: 12px;}
+  .td-agency { font-weight: 600; color: var(--text-1); display: block; margin-bottom: 2px;}
+  .td-sub { font-size: 12px; color: var(--text-3); }
+
+  .action-group { display: flex; gap: 8px; }
+  .btn-outline { padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; border: 1px solid var(--border-md); background: #fff; color: var(--text-2); transition: all 0.2s;}
+  .btn-outline:hover { background: var(--surface-2); border-color: var(--text-3); }
+  .btn-outline-danger { padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; border: 1px solid #FECDD3; background: #fff; color: #E11D48; transition: all 0.2s;}
+  .btn-outline-danger:hover { background: #FEF2F2; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; z-index: 500; background: rgba(2,6,23,0.7); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal { background: var(--surface); border-radius: var(--radius-xl); box-shadow: var(--shadow-md); width: 100%; max-width: 550px; transform: scale(0.95); transition: transform 0.2s; overflow: hidden; }
+  .modal-overlay.open .modal { transform: scale(1); }
+  .modal-header { padding: 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--navy-dk); color: #fff;}
+  .modal-title { font-family: var(--ff-display); font-size: 18px; font-weight: 600; }
+  .modal-close { color: rgba(255,255,255,0.7); cursor: pointer; transition: color 0.2s;}
+  .modal-close:hover { color: #fff; }
+  .modal-body { padding: 24px; max-height: 70vh; overflow-y: auto; }
+  .form-group { margin-bottom: 20px; }
+  .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .form-control { width: 100%; padding: 12px 16px; font-family: var(--ff-body); font-size: 14px; color: var(--text-1); background: #fff; border: 1px solid var(--border-md); border-radius: 8px; transition: all 0.2s; outline: none; }
+  .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 12px; background: #FAFAFA; }
+  .btn-ghost { padding: 10px 20px; background: transparent; color: var(--text-2); font-weight: 600; border: 1px solid var(--border-md); border-radius: 10px; transition: background 0.2s;}
+  .btn-ghost:hover { background: var(--surface-3); }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--navy-dk); color: #fff; padding: 12px 24px; border-radius: 30px; font-size: 14px; font-weight: 500; opacity: 0; transition: all 0.3s; z-index: 1000; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">C</div>
+    <div class="sidebar-brand">Civic<span>Connect</span></div>
+  </div>
+
+  <div class="sys-context">
+    <div class="sys-label">Access Level</div>
+    <div class="sys-name">Platform Superadmin</div>
+  </div>
+
+  <nav class="nav-menu">
+    <a href="#" class="nav-item active" onclick="switchView('view-overview', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+      System Overview
+    </a>
+    <a href="#" class="nav-item" onclick="switchView('view-tenants', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+      Tenant Agencies
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="logout-btn" onclick="firebase.auth().signOut().then(() => { window.location.href='superadmin_login.html'; })">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Terminate Session
+    </button>
+  </div>
+</aside>
+
+<main class="main-wrapper">
+  
+  <header class="topbar anim-0">
+    <h1 class="page-title">Master Control Panel</h1>
+    <div class="topbar-right">
+      <div class="sys-status">
+        <div class="sys-status-dot"></div>
+        All Systems Operational
+      </div>
+      <div class="staff-profile">
+        <div class="staff-info">
+          <span class="staff-name">Root Admin</span>
+          <span class="staff-role">SysOwner</span>
+        </div>
+        <div class="staff-avatar">SA</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="dash-body">
+    
+    <!-- VIEW 1: SYSTEM OVERVIEW -->
+    <div id="view-overview" class="view-section active">
+      <div class="stats-grid anim-1">
+        <div class="stat-card sc-gold">
+          <div class="stat-info">
+            <div class="stat-label">Active Tenants</div>
+            <div class="stat-value" id="statActiveTenants">0</div>
+          </div>
+          <div class="stat-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></div>
+        </div>
+        <div class="stat-card sc-blue">
+          <div class="stat-info">
+            <div class="stat-label">Total Services</div>
+            <div class="stat-value">24</div>
+          </div>
+          <div class="stat-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
+        </div>
+        <div class="stat-card sc-green">
+          <div class="stat-info">
+            <div class="stat-label">Lifetime Appointments</div>
+            <div class="stat-value">142.5K</div>
+          </div>
+          <div class="stat-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        </div>
+        <div class="stat-card sc-purple">
+          <div class="stat-info">
+            <div class="stat-label">Platform Uptime</div>
+            <div class="stat-value">99.9%</div>
+          </div>
+          <div class="stat-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></div>
+        </div>
+      </div>
+
+      <div class="section-hd anim-2">
+        <div>
+          <h2 class="section-title">Platform Status</h2>
+          <p class="section-subtitle">Real-time overview of CivicConnect infrastructure.</p>
+        </div>
+      </div>
+
+      <div class="table-section anim-2" style="padding: 32px; text-align: center; margin-bottom: 24px;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="1.5" style="margin-bottom:16px;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+        <h3 style="font-family: var(--ff-display); color: var(--text-1); margin-bottom: 8px;">System Operating Normally</h3>
+        <p style="color: var(--text-3); font-size: 14px;">All servers and database clusters are currently healthy and syncing across the Philippines.</p>
+      </div>
+
+      <div class="table-section anim-3" style="padding: 24px; background: #fff;">
+        <div style="margin-bottom: 16px;">
+          <h3 style="font-family: var(--ff-display); font-size: 16px; font-weight: 600; color: var(--text-1);">Platform Traffic (Last 7 Days)</h3>
+          <p style="font-size: 12px; color: var(--text-3);">Number of appointments processed platform-wide.</p>
+        </div>
+        <div style="height: 280px; width: 100%;">
+          <canvas id="trafficChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 2: TENANT AGENCIES -->
+    <div id="view-tenants" class="view-section">
+      <div class="section-hd anim-1">
+        <div>
+          <h2 class="section-title">Tenant Agency Directory</h2>
+          <p class="section-subtitle">Manage all registered organizations, clinics, and government branches.</p>
+        </div>
+        <button class="btn-primary" onclick="openModal('add')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Register New Tenant
+        </button>
+      </div>
+
+      <div class="table-section anim-2">
+        <div class="table-controls">
+          <div class="table-search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="tenantSearch" placeholder="Search by agency code or name..." oninput="handleSearch()">
+          </div>
+        </div>
+        
+        <table>
+          <thead>
+            <tr>
+              <th>Tenant Code</th>
+              <th>Organization Information</th>
+              <th>Admin Account</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <!-- THIS BODY IS NOW EMPTY AND WAITING FOR FIREBASE DATA -->
+          <tbody id="tenantTableBody">
+            <tr>
+              <td colspan="5" style="text-align:center; color: var(--text-3);">Loading active tenants from database...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ════ REGISTRATION MODAL ════ -->
+<div class="modal-overlay" id="tenantModal" onclick="if(event.target === this) closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modalTitle">Register New Tenant</h3>
+      <button class="modal-close" onclick="closeModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <form id="tenantForm" onsubmit="saveTenant(event)">
+        
+        <div class="form-group">
+          <label class="form-label">Organization / Agency Name</label>
+          <input type="text" id="orgName" class="form-control" placeholder="e.g. Dept of Health or ABC Corp" required oninput="generateCode()">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Branch Name / Location</label>
+            <input type="text" id="branchName" class="form-control" placeholder="e.g. Makati Branch" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">System Code (Auto-Gen)</label>
+            <input type="text" id="sysCode" class="form-control" value="" readonly style="background: var(--surface-2); color: var(--text-3); font-family: monospace;">
+          </div>
+        </div>
+
+        <div style="margin: 24px 0 16px; border-bottom: 1px solid var(--border);"></div>
+        <h4 style="font-size: 13px; font-weight: 600; color: var(--text-1); margin-bottom: 16px;">Admin Credentials</h4>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Admin Username</label>
+            <input type="text" id="adminUser" class="form-control" placeholder="admin.username" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Temporary Password</label>
+            <input type="password" id="adminPass" class="form-control" placeholder="••••••••" required>
+          </div>
+        </div>
+        
+        <!-- Hidden input to store doc ID when editing -->
+        <input type="hidden" id="editDocId" value="">
+
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="document.getElementById('tenantForm').requestSubmit()">Save Tenant</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--navy-dk)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toastMsg" style="color: var(--navy-dk);">Action successful</span>
+</div>
+
+<script>
+  // ════ Chart.js Initialization ════
+  document.addEventListener("DOMContentLoaded", function() {
+    const ctx = document.getElementById('trafficChart').getContext('2d');
+    let gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(245, 158, 11, 0.4)'); 
+    gradient.addColorStop(1, 'rgba(245, 158, 11, 0.0)');
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        datasets: [{
+          label: 'Appointments Processed',
+          data: [1200, 1900, 1500, 2100, 1800, 800, 500],
+          borderColor: '#F59E0B',
+          backgroundColor: gradient,
+          borderWidth: 3,
+          pointBackgroundColor: '#FFFFFF',
+          pointBorderColor: '#F59E0B',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          fill: true,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { backgroundColor: '#0F172A', titleFont: { family: 'Inter', size: 13 }, bodyFont: { family: 'Inter', size: 14, weight: 'bold' }, padding: 12, cornerRadius: 8, displayColors: false } },
+        scales: { y: { beginAtZero: true, grid: { color: 'rgba(15, 23, 42, 0.05)' }, border: { display: false }, ticks: { font: { family: 'Inter', size: 12 }, color: '#64748B' } }, x: { grid: { display: false }, border: { display: false }, ticks: { font: { family: 'Inter', size: 12 }, color: '#64748B' } } }
+      }
+    });
+  });
+
+  // View Switcher Logic
+  function switchView(viewId, clickedBtn) {
+    document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
+    const activeView = document.getElementById(viewId);
+    activeView.classList.add('active');
+    
+    const animatedElements = activeView.querySelectorAll('.anim-1, .anim-2, .anim-3');
+    animatedElements.forEach(el => { el.style.animation = 'none'; el.offsetHeight; el.style.animation = null; });
+
+    document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+    clickedBtn.classList.add('active');
+  }
+
+  function generateCode() {
+    const input = document.getElementById('orgName').value;
+    const letters = input.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 3);
+    const codeBox = document.getElementById('sysCode');
+    if (letters.length > 0) { codeBox.value = letters + '-NEW-01'; } else { codeBox.value = ''; }
+  }
+
+  function handleSearch() {
+    const term = document.getElementById('tenantSearch').value.toLowerCase();
+    const rows = document.querySelectorAll('#tenantTableBody tr');
+    rows.forEach(row => {
+      const text = row.innerText.toLowerCase();
+      row.style.display = text.includes(term) ? '' : 'none';
+    });
+  }
+
+  // Modal Logic
+  const modal = document.getElementById('tenantModal');
+  const form = document.getElementById('tenantForm');
+  const modalTitle = document.getElementById('modalTitle');
+
+  function openModal(mode = 'add', docId = '', org = '', branch = '', code = '', user = '', status = 'Operational') {
+    if (mode === 'edit') {
+      modalTitle.textContent = "Edit Tenant Details";
+      document.getElementById('orgName').value = org;
+      document.getElementById('branchName').value = branch;
+      document.getElementById('sysCode').value = code;
+      document.getElementById('adminUser').value = user;
+      document.getElementById('adminPass').value = "********"; // Don't pull real passwords for security
+      document.getElementById('editDocId').value = docId;
+    } else {
+      modalTitle.textContent = "Register New Tenant";
+      form.reset();
+      document.getElementById('sysCode').value = '';
+      document.getElementById('editDocId').value = '';
+    }
+    modal.classList.add('open');
+  }
+
+  function closeModal() { modal.classList.remove('open'); }
+
+  // ════ FIRESTORE LOGIC ════ //
+
+  // 1. SAVE to Database
+  function saveTenant(e) {
+    e.preventDefault();
+    
+    const tenantData = {
+      orgName: document.getElementById('orgName').value,
+      branchName: document.getElementById('branchName').value,
+      sysCode: document.getElementById('sysCode').value,
+      adminUser: document.getElementById('adminUser').value,
+      status: 'Operational', // Default status for new tenants
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    const docId = document.getElementById('editDocId').value;
+
+    if (docId) {
+      // Update existing record
+      db.collection("tenants").doc(docId).update(tenantData)
+        .then(() => {
+          closeModal();
+          showToast('Tenant updated successfully.');
+        })
+        .catch((error) => {
+          console.error("Error updating database: ", error);
+          alert("Database Error: " + error.message);
+        });
+    } else {
+      // Add new record
+      db.collection("tenants").add(tenantData)
+        .then(() => {
+          closeModal();
+          showToast('New organization saved to cloud database!');
+        })
+        .catch((error) => {
+          console.error("Error writing to database: ", error);
+          alert("Database Error: Check your Firebase Firestore Rules! \n\n" + error.message);
+        });
+    }
+  }
+
+  // 2. READ from Database (Real-time listener)
+  db.collection("tenants").orderBy("timestamp", "desc").onSnapshot((querySnapshot) => {
+    const tableBody = document.getElementById('tenantTableBody');
+    tableBody.innerHTML = ''; // Clear table
+    
+    let activeCount = 0;
+
+    if (querySnapshot.empty) {
+      tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--text-3);">No tenants found. Click "Register New Tenant" to add one.</td></tr>';
+    }
+
+    querySnapshot.forEach((doc) => {
+      const tenant = doc.data();
+      activeCount++;
+
+      // Determine badge styling based on status
+      let badgeHtml = '';
+      let suspendBtnHtml = '';
+      let rowOpacity = '1';
+
+      if (tenant.status === 'Suspended') {
+        badgeHtml = '<span class="badge badge-suspended">Suspended</span>';
+        suspendBtnHtml = `<button class="btn-outline suspend-btn" onclick="toggleTenantStatus('${doc.id}', 'Operational')">Restore</button>`;
+        rowOpacity = '0.7';
+      } else {
+        badgeHtml = '<span class="badge badge-active">Operational</span>';
+        suspendBtnHtml = `<button class="btn-outline-danger suspend-btn" onclick="toggleTenantStatus('${doc.id}', 'Suspended')">Suspend</button>`;
+      }
+
+      // Build the table row
+      const tr = document.createElement('tr');
+      tr.style.opacity = rowOpacity;
+      tr.innerHTML = `
+        <td><span class="td-code">${tenant.sysCode}</span></td>
+        <td>
+          <span class="td-agency">${tenant.orgName}</span>
+          <span class="td-sub">${tenant.branchName}</span>
+        </td>
+        <td>${tenant.adminUser}</td>
+        <td>${badgeHtml}</td>
+        <td>
+          <div class="action-group">
+            <button class="btn-outline" onclick="openModal('edit', '${doc.id}', '${tenant.orgName}', '${tenant.branchName}', '${tenant.sysCode}', '${tenant.adminUser}')">Edit</button>
+            ${suspendBtnHtml}
+          </div>
+        </td>
+      `;
+      tableBody.appendChild(tr);
+    });
+
+    // Update the stats counter dynamically
+    document.getElementById('statActiveTenants').textContent = activeCount;
+  });
+
+  // 3. SUSPEND / RESTORE Database Update
+  function toggleTenantStatus(docId, newStatus) {
+    db.collection("tenants").doc(docId).update({
+      status: newStatus
+    }).then(() => {
+      showToast(`Tenant status updated to ${newStatus}.`);
+    });
+  }
+
+  // Toast Notification
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    t.style.background = 'var(--primary)';
+    t.style.color = 'var(--navy-dk)';
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+  }
+</script>
+
+</body>
+</html>

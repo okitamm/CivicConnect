@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CivicConnect</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* eGov PH Inspired Palette */
+    --co: #1D4ED8; /* Official Tech Blue */
+    --co-lt: #EFF6FF;
+    --co-bd: rgba(29, 78, 216, 0.18);
+    --cbg: #F8FAFC; /* Crisp slate-white background */
+    --ctext: #0F172A; /* Deep slate black for text */
+    --cmuted: #64748B; /* Professional gray */
+    --cborder: rgba(15, 23, 42, 0.08);
+    
+    /* PH Flag Accents */
+    --accent-red: #E11D48;
+    --accent-yellow: #F59E0B;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #ffffff;
+    color: var(--ctext);
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ─── BACKGROUND DECOR ─── */
+  .bg-blob { position: fixed; border-radius: 50%; filter: blur(80px); pointer-events: none; z-index: 0; }
+  .bg-blob-1 { width: 500px; height: 500px; background: rgba(29, 78, 216, 0.05); bottom: -100px; left: -120px; }
+  .bg-blob-2 { width: 400px; height: 400px; background: rgba(225, 29, 72, 0.03); top: 0; right: -80px; }
+
+  .geo { position: absolute; pointer-events: none; z-index: 0; }
+  .geo-tri { width: 0; height: 0; opacity: 0.8; }
+  .geo-tri-up { border-left: 9px solid transparent; border-right: 9px solid transparent; border-bottom-width: 15px; border-bottom-style: solid; }
+  .geo-tri-down { border-left: 9px solid transparent; border-right: 9px solid transparent; border-top-width: 15px; border-top-style: solid; }
+  .geo-sq { width: 11px; height: 11px; transform: rotate(45deg); opacity: 0.75; }
+  .geo-dot { border-radius: 50%; opacity: 0.6; }
+
+  /* ─── NAVBAR ─── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100; height: 72px;
+    display: flex; align-items: center; justify-content: space-between; padding: 0 60px;
+    background: rgba(255,255,255,0.95); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    border-bottom: 1px solid var(--cborder); transition: box-shadow 0.3s;
+  }
+  nav.scrolled { box-shadow: 0 4px 32px rgba(0,0,0,0.06); }
+
+  .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .nav-logo-mark {
+    width: 36px; height: 36px; background: var(--co); border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Poppins', sans-serif; font-size: 20px; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .nav-logo-text { font-family: 'Poppins', sans-serif; font-size: 22px; font-weight: 700; color: var(--ctext); line-height: 1; letter-spacing: -0.5px; }
+  .nav-logo-text span { color: var(--co); }
+
+  .nav-links { display: flex; align-items: center; gap: 36px; list-style: none; }
+  .nav-links a {
+    font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: var(--cmuted);
+    text-decoration: none; position: relative; transition: color 0.2s;
+  }
+  .nav-links a::after {
+    content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 2px;
+    background: var(--co); transition: width 0.25s; border-radius: 2px;
+  }
+  .nav-links a:hover, .nav-links a.active { color: var(--ctext); }
+  .nav-links a:hover::after, .nav-links a.active::after { width: 100%; }
+
+  /* ─── HERO SECTION ─── */
+  .hero { 
+    min-height: 100vh; 
+    display: flex; 
+    align-items: center; 
+    position: relative; 
+    overflow: hidden; 
+    
+    /* ADDED: Local Background Image with Fade Gradient */
+    background: linear-gradient(90deg, #ffffff 35%, rgba(255,255,255,0.2) 55%, transparent 80%),
+              url('./hero-bg.jpg') no-repeat right center;
+    background-size: cover;
+  }
+  
+  .hero-content { 
+    flex: 0 0 52%; 
+    max-width: 52%; 
+    padding-right: 40px; 
+    padding-left: 60px; /* Aligns with navbar padding */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative; 
+    z-index: 2; 
+    animation: fadeSlideUp 0.9s cubic-bezier(0.22,1,0.36,1) both; 
+  }
+
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(28px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px; background: var(--co-lt);
+    border: 1px solid var(--co-bd); border-radius: 30px; padding: 6px 16px;
+    font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+    text-transform: uppercase; color: var(--co); margin-bottom: 24px;
+    animation: fadeSlideUp 0.9s 0.1s cubic-bezier(0.22,1,0.36,1) both;
+    width: fit-content;
+  }
+  .hero-eyebrow-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--co); }
+
+  .hero-title {
+    font-family: 'Poppins', sans-serif; font-size: clamp(40px, 4.5vw, 56px); font-weight: 800;
+    line-height: 1.15; color: var(--ctext); margin-bottom: 20px; letter-spacing: -1px;
+    animation: fadeSlideUp 0.9s 0.15s cubic-bezier(0.22,1,0.36,1) both;
+  }
+  .hero-title em { font-style: normal; color: var(--co); }
+
+  .hero-subtitle {
+    font-size: 16px; font-weight: 400; line-height: 1.7; color: var(--cmuted);
+    max-width: 450px; margin-bottom: 40px; animation: fadeSlideUp 0.9s 0.22s cubic-bezier(0.22,1,0.36,1) both;
+  }
+
+  .portal-label {
+    font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.05em;
+    text-transform: uppercase; color: var(--cmuted); margin-bottom: 16px;
+    animation: fadeSlideUp 0.9s 0.28s cubic-bezier(0.22,1,0.36,1) both;
+  }
+
+  .portal-buttons { display: flex; gap: 12px; flex-wrap: wrap; animation: fadeSlideUp 0.9s 0.32s cubic-bezier(0.22,1,0.36,1) both; }
+
+  .pb {
+    display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-radius: 12px;
+    text-decoration: none; cursor: pointer; border: none; font-family: 'Inter', sans-serif;
+    transition: all 0.2s ease; position: relative; overflow: hidden;
+  }
+  .pb:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+  .pb-citizen { background: #0F172A; color: #fff; }
+  .pb-staff { background: var(--co); color: #fff; }
+  .pb-admin { background: #ffffff; color: var(--ctext); border: 1px solid var(--cborder); }
+  .pb-admin:hover { border-color: var(--cmuted); }
+
+  .pb-icon {
+    width: 36px; height: 36px; border-radius: 8px; background: rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .pb-admin .pb-icon { background: var(--cbg); color: var(--ctext); }
+  .pb-admin .pb-icon svg { stroke: var(--ctext); }
+
+  .pb-text { line-height: 1.2; text-align: left; }
+  .pb-text .pb-sub { font-size: 10px; font-weight: 500; opacity: 0.8; display: block; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;}
+  .pb-text .pb-main { font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; display: block; }
+
+  /* Scroll indicator */
+  .scroll-indicator {
+    position: absolute; bottom: 40px; left: 60px; display: flex; flex-direction: column; align-items: center; gap: 7px;
+    animation: fadeSlideUp 0.9s 0.55s cubic-bezier(0.22,1,0.36,1) both; z-index: 2;
+  }
+  .scroll-arrow { animation: scrollBounce 1.8s ease-in-out infinite; }
+  @keyframes scrollBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(7px); } }
+  .scroll-indicator span { font-size: 11px; font-weight: 500; color: var(--cmuted); letter-spacing: 0.05em; }
+
+  /* ─── ABOUT SECTION ─── */
+  .section { padding: 110px 60px; position: relative; z-index: 1; }
+  .section-eyebrow { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--co); margin-bottom: 12px; }
+  .section-title { font-family: 'Poppins', sans-serif; font-size: clamp(28px, 3vw, 40px); font-weight: 700; line-height: 1.2; color: var(--ctext); margin-bottom: 18px; max-width: 520px; letter-spacing: -0.5px;}
+  .section-body { font-size: 15px; line-height: 1.75; color: var(--cmuted); max-width: 580px; margin-bottom: 40px; }
+
+  .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+  .about-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .stat-card { background: #fff; border: 1px solid var(--cborder); border-radius: 16px; padding: 22px 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02);}
+  .stat-card:first-child { border-top: 4px solid var(--co); }
+  .stat-num { font-family: 'Poppins', sans-serif; font-size: 36px; font-weight: 700; color: var(--ctext); line-height: 1; margin-bottom: 5px; }
+  .stat-num span { color: var(--co); }
+  .stat-label { font-size: 13px; color: var(--cmuted); font-weight: 500; line-height: 1.4; }
+
+  /* ─── FEATURES SECTION ─── */
+  .features-bg { background: var(--ctext); padding: 110px 60px; position: relative; overflow: hidden; }
+  .features-bg .section-eyebrow { color: var(--accent-yellow); }
+  .features-bg .section-title { color: #fff; max-width: 600px; }
+  .features-bg .section-body { color: rgba(255,255,255,0.6); }
+
+  .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 48px; }
+  .feat-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 28px 24px; transition: background 0.25s, transform 0.25s; cursor: default; }
+  .feat-card:hover { background: rgba(255,255,255,0.06); transform: translateY(-3px); }
+  .feat-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(29, 78, 216, 0.2); border: 1px solid rgba(29, 78, 216, 0.3); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+  .feat-title { font-family: 'Poppins', sans-serif; font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 8px; line-height: 1.35; }
+  .feat-desc { font-size: 13px; color: rgba(255,255,255,0.55); line-height: 1.65; }
+
+  .feat-bg-geo { position: absolute; opacity: 0.04; pointer-events: none; }
+
+  /* ─── FOOTER ─── */
+  footer { background: #0b1121; border-top: 1px solid rgba(255,255,255,0.05); padding: 32px 60px; display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 1; }
+  .footer-logo { display: flex; align-items: center; gap: 8px; }
+  .footer-logo-mark { width: 28px; height: 28px; background: var(--co); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 700; color: #fff; }
+  .footer-logo-text { font-family: 'Poppins', sans-serif; font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+  .footer-logo-text span { color: var(--co); }
+  .footer-copy { font-size: 13px; color: rgba(255,255,255,0.4); }
+  .footer-links { display: flex; gap: 24px; list-style: none; }
+  .footer-links a { font-size: 13px; color: rgba(255,255,255,0.5); text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="bg-blob bg-blob-1"></div>
+<div class="bg-blob bg-blob-2"></div>
+
+<nav id="mainNav">
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-mark">C</div>
+    <span class="nav-logo-text">Civic<span>Connect</span></span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#hero" class="active">Home</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#features">Features</a></li>
+  </ul>
+</nav>
+
+<section class="hero" id="hero">
+  <div class="geo geo-tri geo-tri-up" style="border-bottom-color:var(--accent-yellow);top:22%;left:38px;transform:scale(1.1);"></div>
+  <div class="geo geo-tri geo-tri-down" style="border-top-color:var(--co);top:28%;left:52px;transform:scale(0.7);opacity:0.5;"></div>
+  <div class="geo geo-sq" style="background:var(--accent-red);bottom:32%;left:64px;"></div>
+  <div class="geo geo-dot" style="width:10px;height:10px;background:var(--co);bottom:38%;left:88px;"></div>
+
+  <div class="hero-content">
+    <div class="hero-eyebrow">
+      <div class="hero-eyebrow-dot"></div>
+      Philippine Government Services
+    </div>
+
+    <h1 class="hero-title">
+      Simpler Access to<br>
+      <em>Government Services,</em><br>
+      For Every Filipino.
+    </h1>
+
+    <p class="hero-subtitle">
+      CivicConnect bridges citizens, government offices, and system administrators on one secure platform — making appointment booking fast, transparent, and dignified.
+    </p>
+
+    <div class="portal-label">Choose your portal to get started</div>
+
+    <div class="portal-buttons">
+      <a href="citizen_login.html" class="pb pb-citizen">
+        <div class="pb-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <div class="pb-text"><span class="pb-sub">For the Public</span><span class="pb-main">Citizen Portal</span></div>
+      </a>
+      <a href="admin_login.html" class="pb pb-staff">
+        <div class="pb-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+        <div class="pb-text"><span class="pb-sub">For Office Staff</span><span class="pb-main">Agency Login</span></div>
+      </a>
+      <a href="superadmin_login.html" class="pb pb-admin">
+        <div class="pb-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="pb-text"><span class="pb-sub">Platform Owner</span><span class="pb-main">System Control</span></div>
+      </a>
+    </div>
+  </div>
+
+  <div class="scroll-indicator">
+    <div class="scroll-arrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cmuted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>
+    <span>Scroll down</span>
+  </div>
+</section>
+
+<section class="section" id="about" style="background:var(--cbg);">
+  <div class="about-grid">
+    <div>
+      <div class="section-eyebrow">About CivicConnect</div>
+      <h2 class="section-title">A smarter bridge between citizens and government.</h2>
+      <p class="section-body">CivicConnect is a multi-tenant government appointment platform built for the Philippines — connecting Filipino citizens with agencies like LTO, PSA, NBI, DFA, and PhilHealth through one unified, secure, and accessible system.</p>
+      <p class="section-body" style="margin-top:-20px;">Each government office operates in a fully isolated environment, ensuring data privacy across agencies while giving system administrators full platform-level visibility and control.</p>
+    </div>
+    <div class="about-stats">
+      <div class="stat-card"><div class="stat-num"><span>7</span>+</div><div class="stat-label">Government agencies on the platform</div></div>
+      <div class="stat-card"><div class="stat-num">1,284</div><div class="stat-label">Appointments processed daily</div></div>
+      <div class="stat-card"><div class="stat-num">98<span>.7%</span></div><div class="stat-label">Platform uptime this year</div></div>
+      <div class="stat-card"><div class="stat-num"><span>3</span></div><div class="stat-label">Distinct secure role portals</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="features-bg" id="features">
+  <svg class="feat-bg-geo" style="right:-60px;top:-40px;width:380px;height:380px;" viewBox="0 0 380 380"><circle cx="190" cy="190" r="160" stroke="white" stroke-width="0.5" fill="none"/><circle cx="190" cy="190" r="100" stroke="white" stroke-width="0.5" fill="none"/><circle cx="190" cy="190" r="50" stroke="white" stroke-width="0.5" fill="none"/></svg>
+  <div class="section-eyebrow">Platform Features</div>
+  <h2 class="section-title">Everything a modern civic platform needs.</h2>
+  <p class="section-body">Designed from the ground up for the Philippine government context — trustworthy, accessible, and built for scale.</p>
+
+  <div class="features-grid">
+    <div class="feat-card">
+      <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--co)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <div class="feat-title">Real-Time Appointment Booking</div>
+      <div class="feat-desc">Citizens can browse available services, select a date and time slot, and receive instant confirmation — with live slot availability updates per office.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--co)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+      <div class="feat-title">Multi-Tenant Isolation</div>
+      <div class="feat-desc">Each government office operates in a fully isolated environment. LTO staff cannot see PSA records — and vice versa. Data sovereignty is enforced at the architecture level.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--co)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+      <div class="feat-title">Staff Operations Dashboard</div>
+      <div class="feat-desc">Branch staff get a dedicated console showing today's queue, citizen details, service type, and one-click status updates — Complete or No-Show — per appointment.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--co)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div class="feat-title">Superadmin Control Panel</div>
+      <div class="feat-desc">The platform owner can register new government agencies, generate isolated admin credentials, and monitor system health and booking volumes across all tenants.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--co)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div class="feat-title">Slot & Queue Management</div>
+      <div class="feat-desc">Office admins configure available time slots per service, set slot capacities, and manage walk-in queues alongside pre-booked appointments for a seamless day-of flow.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--co)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.67 10.7 19.79 19.79 0 0 1 1.57 2.1 2 2 0 0 1 3.54 0h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 7.91a16 16 0 0 0 6 6l.38-.38a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 21 16z"/></svg></div>
+      <div class="feat-title">SMS & Notification Ready</div>
+      <div class="feat-desc">Automated confirmation and reminder notifications can be configured per agency — reducing no-show rates and keeping citizens informed every step of the process.</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">
+    <div class="footer-logo-mark">C</div>
+    <span class="footer-logo-text">Civic<span>Connect</span></span>
+  </div>
+  <span class="footer-copy">© 2026 CivicConnect. Built for the Filipino People.</span>
+  <ul class="footer-links">
+    <li><a href="#">Privacy Policy</a></li>
+    <li><a href="#">Terms of Use</a></li>
+    <li><a href="#">Contact</a></li>
+  </ul>
+</footer>
+
+<script>
+  const nav = document.getElementById('mainNav');
+  window.addEventListener('scroll', () => { nav.classList.toggle('scrolled', window.scrollY > 20); });
+
+  const sections = document.querySelectorAll('section[id]');
+  const links = document.querySelectorAll('.nav-links a');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const match = document.querySelector(`.nav-links a[href="#${entry.target.id}"]`);
+        if (match) match.classList.add('active');
+      }
+    });
+  }, { threshold: 0.5 });
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

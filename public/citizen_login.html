@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CivicConnect</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+
+<!-- ════ FIREBASE SDKS ════ -->
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+
+<style>
+  :root {
+    --co: #1D4ED8; 
+    --navy: #0F172A; 
+    --cbg: #F8FAFC; 
+    --ctext: #0F172A; 
+    --cmuted: #64748B; 
+    --cborder: #E2E8F0; 
+    --co-hover: #1E3A8A; 
+    --accent-red: #E11D48;
+    --accent-yellow: #F59E0B;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--cbg);
+    color: var(--ctext);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ─── ENTRANCE ANIMATIONS ─── */
+  @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes floatSlow { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-15px) rotate(5deg); } }
+  @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+  /* ─── WELCOMING PUBLIC BACKGROUND DECOR ─── */
+  .bg-blob { position: absolute; border-radius: 50%; filter: blur(80px); pointer-events: none; z-index: 0; }
+  .bg-blob-1 { width: 550px; height: 550px; background: rgba(29, 78, 216, 0.08); bottom: -100px; left: -150px; }
+  .bg-blob-2 { width: 450px; height: 450px; background: rgba(225, 29, 72, 0.05); top: -50px; right: -100px; }
+
+  .geo { position: absolute; pointer-events: none; z-index: 0; animation: floatSlow 6s ease-in-out infinite; }
+  .geo-tri { width: 0; height: 0; opacity: 0.6; }
+  .geo-tri-up { border-left: 12px solid transparent; border-right: 12px solid transparent; border-bottom-width: 20px; border-bottom-style: solid; }
+  .geo-tri-down { border-left: 10px solid transparent; border-right: 10px solid transparent; border-top-width: 18px; border-top-style: solid; }
+  .geo-sq { width: 14px; height: 14px; transform: rotate(45deg); opacity: 0.5; }
+  .geo-dot { border-radius: 50%; opacity: 0.5; }
+
+  /* ─── AUTH WRAPPER ─── */
+  .auth-wrapper {
+    position: relative; z-index: 10; width: 100%; max-width: 440px; padding: 20px;
+    animation: fadeSlideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500;
+    color: var(--cmuted); text-decoration: none; margin-bottom: 24px; transition: color 0.2s;
+  }
+  .back-link:hover { color: var(--co); }
+  .back-link svg { width: 16px; height: 16px; }
+
+  /* ─── AUTH CARD ─── */
+  .auth-card {
+    background: #ffffff; border: 1px solid var(--cborder); border-radius: 16px;
+    box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08); overflow: hidden;
+  }
+
+  .form-section { display: none; animation: fadeIn 0.4s ease-out forwards; }
+  .form-section.active { display: block; }
+
+  /* ─── CARD HEADER ─── */
+  .auth-header {
+    background: var(--navy); padding: 32px 32px 24px; text-align: center; position: relative; overflow: hidden;
+  }
+  .auth-header::after {
+    content: ''; position: absolute; top: -50px; left: -50px; width: 150px; height: 150px;
+    border-radius: 50%; background: radial-gradient(circle, rgba(29, 78, 216, 0.4) 0%, transparent 70%);
+  }
+
+  .auth-logo { display: inline-flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 16px; position: relative; z-index: 2; }
+  .auth-logo-mark {
+    width: 32px; height: 32px; background: var(--co); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: 'Poppins', sans-serif; font-size: 16px; font-weight: 700; color: #fff;
+  }
+  .auth-logo-text { font-family: 'Poppins', sans-serif; font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+
+  .auth-title { font-family: 'Poppins', sans-serif; font-size: 20px; font-weight: 600; color: #fff; position: relative; z-index: 2; }
+  .auth-subtitle { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 4px; position: relative; z-index: 2; }
+
+  /* ─── CARD BODY ─── */
+  .auth-body { padding: 32px; }
+
+  .form-group { margin-bottom: 20px; }
+  .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--ctext); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  
+  .form-control {
+    width: 100%; height: 46px; padding: 0 16px; font-family: 'Inter', sans-serif; font-size: 14px;
+    color: var(--ctext); background: #F8FAFC; border: 1px solid var(--cborder); border-radius: 10px;
+    transition: all 0.2s; outline: none;
+  }
+  .form-control::placeholder { color: #94A3B8; }
+  .form-control:focus { border-color: var(--co); background: #fff; box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15); }
+
+  .form-options { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; font-size: 13px; }
+  .checkbox-group { display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--cmuted); }
+  .checkbox-group input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--co); }
+  
+  .text-link { color: var(--co); text-decoration: none; font-weight: 600; cursor: pointer; background: none; border: none; font-family: inherit; font-size: inherit; padding: 0;}
+  .text-link:hover { text-decoration: underline; }
+
+  .btn-primary {
+    width: 100%; height: 48px; background: var(--co); color: #fff; border: none; border-radius: 10px;
+    font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; display: flex; align-items: center; justify-content: center; margin-top: 12px;
+  }
+  .btn-primary:hover { background: var(--co-hover); }
+
+  .auth-switch { text-align: center; margin-top: 24px; font-size: 13px; color: var(--cmuted); }
+
+  /* Error Box */
+  .error-box {
+    margin-top: 16px; padding: 12px; background: #FEF2F2; border: 1px solid #FECDD3; border-radius: 8px;
+    display: none; font-size: 12px; color: #BE123C; text-align: center;
+  }
+
+  @media (max-width: 480px) { .auth-wrapper { padding: 16px; } .auth-body { padding: 24px; } }
+</style>
+</head>
+<body>
+
+<div class="bg-blob bg-blob-1"></div>
+<div class="bg-blob bg-blob-2"></div>
+
+<div class="geo geo-tri geo-tri-up" style="border-bottom-color:var(--accent-yellow); top: 15%; left: 10%; animation-delay: 0s;"></div>
+<div class="geo geo-dot" style="width: 12px; height: 12px; background: var(--co); top: 25%; right: 15%; animation-delay: 1s;"></div>
+<div class="geo geo-sq" style="background: var(--accent-red); bottom: 20%; left: 15%; animation-delay: 2s;"></div>
+<div class="geo geo-tri geo-tri-down" style="border-top-color:var(--co); bottom: 25%; right: 10%; animation-delay: 0.5s;"></div>
+
+<div class="auth-wrapper">
+  
+  <a href="index.html" class="back-link">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    Return to Home
+  </a>
+
+  <div class="auth-card">
+    
+    <!-- ════ LOGIN VIEW ════ -->
+    <div id="loginView" class="form-section active">
+      <div class="auth-header">
+        <div class="auth-logo">
+          <div class="auth-logo-mark">C</div>
+          <div class="auth-logo-text">CivicConnect</div>
+        </div>
+        <h1 class="auth-title">Citizen Portal</h1>
+        <p class="auth-subtitle">Book and manage appointments securely.</p>
+      </div>
+
+      <div class="auth-body">
+        <form id="loginForm">
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="loginEmail" class="form-control" placeholder="juan.delacruz@email.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" id="loginPass" class="form-control" placeholder="••••••••" required>
+          </div>
+          <div class="form-options">
+            <label class="checkbox-group"><input type="checkbox"><span>Remember me</span></label>
+            <button type="button" class="text-link" onclick="switchView('forgotView')">Forgot Password?</button>
+          </div>
+          <div id="loginError" class="error-box"></div>
+          <button type="submit" id="loginBtn" class="btn-primary">Log In</button>
+        </form>
+        <div class="auth-switch">
+          Don't have an account? <button class="text-link" onclick="switchView('signupView')">Sign up</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ SIGN UP VIEW ════ -->
+    <div id="signupView" class="form-section">
+      <div class="auth-header">
+        <div class="auth-logo">
+          <div class="auth-logo-mark">C</div>
+          <div class="auth-logo-text">CivicConnect</div>
+        </div>
+        <h1 class="auth-title">Create Account</h1>
+        <p class="auth-subtitle">Join to access government services.</p>
+      </div>
+
+      <div class="auth-body">
+        <form id="signupForm">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" id="regName" class="form-control" placeholder="Juan Dela Cruz" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="regEmail" class="form-control" placeholder="name@email.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" id="regPass" class="form-control" placeholder="Create a strong password" required minlength="6">
+          </div>
+          <div id="regError" class="error-box"></div>
+          <button type="submit" id="regBtn" class="btn-primary">Create Account</button>
+        </form>
+        <div class="auth-switch">
+          Already have an account? <button class="text-link" onclick="switchView('loginView')">Log in</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ FORGOT PASSWORD VIEW ════ -->
+    <div id="forgotView" class="form-section">
+      <div class="auth-header">
+        <div class="auth-logo">
+          <div class="auth-logo-mark">C</div>
+          <div class="auth-logo-text">CivicConnect</div>
+        </div>
+        <h1 class="auth-title">Reset Password</h1>
+        <p class="auth-subtitle">We'll send you a link to reset it.</p>
+      </div>
+
+      <div class="auth-body">
+        <form onsubmit="alert('Reset functionality not wired for prototype!'); switchView('loginView'); return false;">
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" class="form-control" placeholder="name@email.com" required>
+          </div>
+          <button type="submit" class="btn-primary" style="margin-bottom: 12px;">Send Reset Link</button>
+          <button type="button" class="btn-primary" style="background: #F1F5F9; color: var(--ctext);" onclick="switchView('loginView')">Cancel</button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ FIREBASE LOGIC ════ -->
+<script>
+  // Initialize Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyBl7Pu5rA2OrOMM8L_A_fQqiEex2H6cKGk",
+    authDomain: "civicconnect-933d3.firebaseapp.com",
+    projectId: "civicconnect-933d3",
+    storageBucket: "civicconnect-933d3.firebasestorage.app",
+    messagingSenderId: "326496710020",
+    appId: "1:326496710020:web:73b89f27349376367801d1"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  // Switch between Login/Signup/Forgot
+  function switchView(viewId) {
+    document.querySelectorAll('.form-section').forEach(section => { section.classList.remove('active'); });
+    document.getElementById(viewId).classList.add('active');
+    document.getElementById('loginError').style.display = 'none';
+    document.getElementById('regError').style.display = 'none';
+  }
+
+  // ─── LOGIN LOGIC ───
+  document.getElementById('loginForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('loginBtn');
+    const errBox = document.getElementById('loginError');
+    const email = document.getElementById('loginEmail').value;
+    const pass = document.getElementById('loginPass').value;
+
+    btn.textContent = "Authenticating...";
+    btn.style.opacity = "0.7";
+    errBox.style.display = "none";
+
+    auth.signInWithEmailAndPassword(email, pass)
+      .then(() => {
+        btn.textContent = "Success!";
+        btn.style.background = "#059669";
+        setTimeout(() => { window.location.href = 'citizen_dashboard.html'; }, 500);
+      })
+      .catch((error) => {
+        btn.textContent = "Log In";
+        btn.style.opacity = "1";
+        errBox.textContent = "Invalid email or password.";
+        errBox.style.display = "block";
+      });
+  });
+
+  // ─── REGISTRATION LOGIC ───
+  document.getElementById('signupForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('regBtn');
+    const errBox = document.getElementById('regError');
+    const name = document.getElementById('regName').value;
+    const email = document.getElementById('regEmail').value;
+    const pass = document.getElementById('regPass').value;
+
+    btn.textContent = "Creating Account...";
+    btn.style.opacity = "0.7";
+    errBox.style.display = "none";
+
+    auth.createUserWithEmailAndPassword(email, pass)
+      .then((userCredential) => {
+        const user = userCredential.user;
+        
+        // Generate a random citizen ID (e.g. PH-4829)
+        const citizenID = "PH-" + Math.floor(Math.random() * 9000 + 1000);
+
+        // Save their name and ID to Firestore
+        return db.collection("citizens").doc(user.uid).set({
+          fullName: name,
+          email: email,
+          citizenID: citizenID,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      })
+      .then(() => {
+        btn.textContent = "Account Created!";
+        btn.style.background = "#059669";
+        setTimeout(() => { window.location.href = 'citizen_dashboard.html'; }, 500);
+      })
+      .catch((error) => {
+        btn.textContent = "Create Account";
+        btn.style.opacity = "1";
+        errBox.textContent = error.message;
+        errBox.style.display = "block";
+      });
+  });
+</script>
+
+</body>
+</html>

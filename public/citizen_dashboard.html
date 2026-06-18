@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CivicConnect</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<!-- ════ FIREBASE SDKS ════ -->
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+
+<style>
+/* ════ DESIGN TOKENS (eGov PH Theme) ════ */
+:root {
+  --primary:      #1D4ED8; --primary-lt:   #EFF6FF; --primary-md:   #DBEAFE; --primary-bd:   rgba(29, 78, 216, 0.2); --primary-dk:   #1E3A8A;
+  --navy:         #0F172A; --navy-md:      #1E293B; --navy-lt:      #F1F5F9;
+  --page-bg:      #F8FAFC; --surface:      #FFFFFF; --surface-2:    #F1F5F9; --surface-3:    #E2E8F0;
+  --text-1:       #0F172A; --text-2:       #334155; --text-3:       #64748B; --text-inv:     #FFFFFF;
+  --border:       rgba(15, 23, 42, 0.08); --border-md:    rgba(15, 23, 42, 0.15);
+  --radius-sm:    8px; --radius-md:    14px; --radius-lg:    20px; --radius-xl:    28px;
+  --shadow-sm:    0 1px 4px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.05); --shadow-md:    0 4px 12px rgba(0,0,0,0.07), 0 12px 40px rgba(0,0,0,0.07);
+  --ff-display:   'Poppins', sans-serif; --ff-body:      'Inter', system-ui, sans-serif;
+  --nav-h:        64px; --sidebar-w:    340px; --content-max:  1320px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; scroll-behavior: smooth; }
+body { font-family: var(--ff-body); background: var(--page-bg); color: var(--text-1); min-height: 100vh; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+button { font-family: var(--ff-body); cursor: pointer; border: none; background: none; }
+a { text-decoration: none; color: inherit; }
+ul { list-style: none; }
+img { display: block; max-width: 100%; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+.badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; padding: 3px 9px; border-radius: 20px; }
+.badge-green  { background: #ECFDF5; color: #059669; }
+.badge-orange { background: #FFF7ED; color: #D97706; }
+.badge-blue   { background: var(--primary-lt); color: var(--primary); }
+.badge-gray   { background: var(--surface-3); color: var(--text-3); }
+.badge-red    { background: #FEF2F2; color: #E11D48; }
+.badge-dot::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+.anim-0 { animation: fadeUp 0.6s cubic-bezier(0.22,1,0.36,1) both; }
+.anim-1 { animation: fadeUp 0.6s 0.08s cubic-bezier(0.22,1,0.36,1) both; }
+.anim-2 { animation: fadeUp 0.6s 0.16s cubic-bezier(0.22,1,0.36,1) both; }
+.anim-3 { animation: fadeUp 0.6s 0.24s cubic-bezier(0.22,1,0.36,1) both; }
+
+.navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 200; height: var(--nav-h); background: rgba(255,255,255,0.94); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; }
+.nav-brand { display: flex; align-items: center; gap: 10px; }
+.nav-logomark { width: 38px; height: 38px; background: var(--primary); border-radius: 11px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(29, 78, 216, 0.3); font-family: var(--ff-display); font-weight: 700; color: #fff; font-size: 18px; }
+.nav-brand-text { display: flex; flex-direction: column; line-height: 1; }
+.nav-brand-name { font-family: var(--ff-display); font-size: 18px; color: var(--text-1); font-weight: 700; letter-spacing: -0.01em; }
+.nav-brand-name em { color: var(--primary); font-style: normal; }
+.nav-portal-tag { font-family: var(--ff-body); font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); margin-top: 2px; }
+.nav-actions { display: flex; align-items: center; gap: 12px; }
+.nav-notif { width: 36px; height: 36px; border-radius: 10px; background: var(--surface-3); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; position: relative; transition: background 0.15s; }
+.nav-notif:hover { background: var(--surface-2); }
+.nav-notif-dot { position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; border-radius: 50%; background: var(--primary); border: 1.5px solid #fff; }
+.nav-profile { display: flex; align-items: center; gap: 9px; padding: 5px 5px 5px 14px; border-radius: 40px; border: 1px solid var(--border-md); background: var(--surface); cursor: pointer; position: relative; transition: border-color 0.15s, box-shadow 0.15s; }
+.nav-profile:hover { border-color: var(--primary-bd); box-shadow: 0 0 0 3px var(--primary-lt); }
+.nav-profile-info { line-height: 1.25; text-align: right;}
+.nav-profile-name { font-size: 13px; font-weight: 600; color: var(--text-1); }
+.nav-profile-role { font-size: 10.5px; color: var(--text-3); }
+.nav-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: #fff; font-family: var(--ff-display); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 2px solid var(--primary-lt); }
+
+.profile-dropdown { position: absolute; top: calc(100% + 10px); right: 0; background: var(--surface); border: 1px solid var(--border-md); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); width: 220px; overflow: hidden; opacity: 0; pointer-events: none; transform: translateY(-8px); transition: opacity 0.2s, transform 0.2s; z-index: 300; }
+.profile-dropdown.open { opacity: 1; pointer-events: all; transform: translateY(0); }
+.pd-header { padding: 16px 18px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+.pd-name { font-size: 14px; font-weight: 600; color: var(--text-1); }
+.pd-id { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.pd-item { display: flex; align-items: center; gap: 10px; padding: 11px 18px; font-size: 13px; color: var(--text-2); font-weight: 500; transition: background 0.12s, color 0.12s; cursor: pointer; text-decoration: none; }
+.pd-item:hover { background: var(--surface-3); color: var(--text-1); }
+.pd-item.danger:hover { background: #FEF2F2; color: #E11D48; }
+.pd-sep { height: 1px; background: var(--border); margin: 4px 0; }
+
+.page { padding-top: var(--nav-h); min-height: 100vh; }
+.hero { background: var(--navy); position: relative; overflow: hidden; padding: 52px 40px 60px; }
+.hero::before { content: ''; position: absolute; top: -120px; right: 180px; width: 600px; height: 600px; border-radius: 50%; background: radial-gradient(circle, rgba(29,78,216,0.25) 0%, transparent 70%); pointer-events: none; }
+.hero-dotgrid { position: absolute; inset: 0; background-image: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px); background-size: 28px 28px; pointer-events: none; }
+.hero-inner { position: relative; z-index: 2; max-width: var(--content-max); margin: 0 auto; }
+.hero-eyebrow { display: inline-flex; align-items: center; gap: 8px; background: rgba(59,130,246,0.18); border: 1px solid rgba(59,130,246,0.3); border-radius: 20px; padding: 5px 13px; font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: #93C5FD; margin-bottom: 18px; }
+.hero-eyebrow-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); }
+.hero-greeting { font-family: var(--ff-display); font-size: clamp(28px, 3.5vw, 44px); color: #fff; line-height: 1.15; margin-bottom: 8px; font-weight: 600; }
+.hero-greeting em { color: #60A5FA; font-style: normal; }
+.hero-subtext { font-size: 15px; color: rgba(255,255,255,0.65); font-weight: 400; margin-bottom: 32px; line-height: 1.6; max-width: 460px; }
+
+.search-wrap { max-width: 680px; position: relative; }
+.search-bar { display: flex; align-items: center; background: #fff; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 8px 40px rgba(0,0,0,0.25); overflow: hidden; transition: box-shadow 0.2s; }
+.search-bar:focus-within { box-shadow: 0 8px 40px rgba(0,0,0,0.3), 0 0 0 3px rgba(29,78,216,0.3); }
+.search-icon { padding: 0 18px; color: var(--text-3); flex-shrink: 0; display: flex; align-items: center; }
+.search-input { flex: 1; border: none; outline: none; background: transparent; font-family: var(--ff-body); font-size: 15px; color: var(--text-1); padding: 16px 0; }
+.search-input::placeholder { color: #94A3B8; }
+.search-btn { margin: 5px; padding: 11px 22px; background: var(--primary); color: #fff; border-radius: 10px; font-family: var(--ff-body); font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 7px; transition: background 0.15s, transform 0.1s; }
+.search-btn:hover { background: var(--primary-dk); }
+.search-btn:active { transform: scale(0.98); }
+
+.main-layout { max-width: var(--content-max); margin: 0 auto; padding: 36px 40px 60px; display: grid; grid-template-columns: 1fr var(--sidebar-w); gap: 28px; align-items: start; }
+.section-hd { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 20px; }
+.section-title { font-family: var(--ff-display); font-size: 22px; color: var(--text-1); font-weight: 600; letter-spacing: -0.5px; }
+.section-subtitle { font-size: 13px; color: var(--text-3); margin-top: 3px; font-weight: 400; }
+
+.services-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.svc-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; position: relative; overflow: hidden; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; display: flex; flex-direction: column; gap: 0; }
+.svc-card::before { content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 4px; border-radius: 4px 0 0 4px; background: var(--primary); }
+.svc-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--primary-bd); }
+.svc-card:hover .svc-book-btn { opacity: 1; transform: translateY(0); }
+.svc-card-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+.svc-icon { width: 50px; height: 50px; border-radius: 14px; background: var(--primary-lt); color: var(--primary); display: flex; align-items: center; justify-content: center; font-family: var(--ff-display); font-size: 13px; font-weight: 700; letter-spacing: -0.02em; flex-shrink: 0; position: relative; }
+.svc-meta-top { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.svc-card-body { flex: 1; }
+.svc-agency { font-size: 10.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-3); margin-bottom: 5px; }
+.svc-name { font-family: var(--ff-display); font-size: 17px; font-weight: 600; color: var(--text-1); line-height: 1.25; margin-bottom: 7px; }
+.svc-desc { font-size: 12.5px; color: var(--text-3); line-height: 1.55; margin-bottom: 16px; }
+.svc-info-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+.svc-info-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-3); font-weight: 500; }
+.svc-info-item svg { flex-shrink: 0; }
+.svc-book-btn { width: 100%; padding: 11px; border-radius: var(--radius-sm); background: var(--primary); color: #fff; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; opacity: 0; transform: translateY(4px); }
+.svc-book-btn:hover { background: var(--primary-dk); }
+
+.agencies-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 36px; }
+.agency-chip { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; display: flex; align-items: center; gap: 11px; cursor: pointer; transition: all 0.15s; }
+.agency-chip.active-agency { border-color: var(--primary); background: var(--primary-lt); }
+.agency-chip:hover { border-color: var(--primary-bd); background: var(--primary-lt); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.agency-chip-icon { width: 40px; height: 40px; border-radius: 10px; background: var(--primary-lt); color: var(--primary); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: var(--ff-display); font-size: 12px; font-weight: 700; letter-spacing: -0.01em; }
+.agency-chip-name { font-size: 13px; font-weight: 600; color: var(--text-1); line-height: 1.2; }
+.agency-chip-count { font-size: 11px; color: var(--text-3); margin-top: 2px; font-weight: 500; }
+
+.sidebar { display: flex; flex-direction: column; gap: 20px; position: sticky; top: calc(var(--nav-h) + 24px); }
+.widget { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.widget-hd { padding: 18px 22px 0; display: flex; align-items: center; justify-content: space-between; }
+.widget-title { font-family: var(--ff-display); font-size: 16px; color: var(--text-1); font-weight: 600; }
+.widget-body { padding: 16px 22px 20px; }
+
+.appt-list { display: flex; flex-direction: column; gap: 10px; }
+.appt-item { display: flex; align-items: stretch; gap: 0; border-radius: var(--radius-md); border: 1px solid var(--border); overflow: hidden; transition: box-shadow 0.15s, transform 0.15s; }
+.appt-item:hover { transform: translateX(3px); box-shadow: var(--shadow-sm); }
+.appt-accent { width: 4px; flex-shrink: 0; background: var(--primary); }
+.appt-content { padding: 13px 14px; flex: 1; }
+.appt-row1 { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.appt-agency { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
+.appt-svc { font-family: var(--ff-display); font-size: 14px; font-weight: 600; color: var(--text-1); margin-bottom: 7px; line-height: 1.3; }
+.appt-row2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.appt-meta { display: flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--text-3); font-weight: 500; }
+.appt-chevron { padding: 0 12px; display: flex; align-items: center; color: var(--text-3); flex-shrink: 0; border-left: 1px solid var(--border); cursor: pointer; transition: 0.2s;}
+.appt-chevron:hover { background: #FEF2F2; color: #E11D48; }
+
+/* MODALS */
+.modal-overlay { position: fixed; inset: 0; z-index: 500; background: rgba(15,23,42,0.6); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal { background: var(--surface); border-radius: var(--radius-xl); box-shadow: 0 24px 80px rgba(0,0,0,0.2); width: 100%; max-width: 560px; overflow: hidden; transform: scale(0.95) translateY(20px); transition: transform 0.3s cubic-bezier(0.22,1,0.36,1); }
+.modal-overlay.open .modal { transform: scale(1) translateY(0); }
+.modal-header { background: var(--navy); padding: 28px 30px 24px; position: relative; overflow: hidden; }
+.modal-header::after { content: ''; position: absolute; top: -40px; right: -40px; width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle, rgba(29, 78, 216, 0.4) 0%, transparent 70%); }
+.modal-close { position: absolute; top: 18px; right: 18px; z-index: 2; width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; transition: background 0.15s, color 0.15s; cursor: pointer; border: none; }
+.modal-close:hover { background: rgba(255,255,255,0.2); color: #fff; }
+.modal-agency-row { display: flex; align-items: center; gap: 12px; position: relative; z-index: 2; }
+.modal-agency-icon { width: 48px; height: 48px; border-radius: 13px; background: var(--surface); color: var(--primary); display: flex; align-items: center; justify-content: center; font-family: var(--ff-display); font-size: 14px; font-weight: 700; letter-spacing: -0.01em; flex-shrink: 0; }
+.modal-agency-label { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(255,255,255,0.6); margin-bottom: 3px; }
+.modal-svc-name { font-family: var(--ff-display); font-size: 20px; font-weight: 600; color: #fff; line-height: 1.15; }
+
+.modal-steps { display: flex; align-items: center; gap: 0; padding: 0 30px; background: var(--surface-2); border-bottom: 1px solid var(--border); }
+.modal-step { flex: 1; display: flex; align-items: center; flex-direction: column; padding: 14px 0; position: relative; transition: color 0.2s; }
+.modal-step::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 0; height: 2px; background: var(--primary); border-radius: 2px; transition: width 0.25s; }
+.modal-step.active::after { width: 70%; }
+.modal-step-num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; margin-bottom: 4px; border: 1.5px solid var(--border-md); color: var(--text-3); background: var(--surface); transition: all 0.2s; }
+.modal-step.active .modal-step-num { background: var(--primary); border-color: var(--primary); color: #fff; }
+.modal-step.done .modal-step-num { background: #ECFDF5; border-color: #059669; color: #059669; }
+.modal-step-label { font-size: 11px; font-weight: 600; color: var(--text-3); letter-spacing: 0.03em; }
+.modal-step.active .modal-step-label { color: var(--primary); }
+
+.modal-body { padding: 26px 30px 30px; }
+.cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.cal-title { font-family: var(--ff-display); font-size: 16px; font-weight: 600; color: var(--text-1); }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 22px; }
+.cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; border-radius: 10px; cursor: pointer; color: var(--text-1); border: 1.5px solid transparent; transition: all 0.15s; position: relative; }
+.cal-day:hover:not(.disabled):not(.empty) { background: var(--primary-lt); color: var(--primary); border-color: var(--primary-bd); }
+.cal-day.selected { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 600; }
+.cal-day.disabled { color: var(--text-3); opacity: 0.4; cursor: not-allowed; }
+
+.slots-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.slot { padding: 11px 8px; border-radius: 10px; border: 1px solid var(--border-md); background: var(--surface); text-align: center; cursor: pointer; transition: all 0.15s; }
+.slot:hover:not(.slot-full) { border-color: var(--primary-bd); background: var(--primary-lt); }
+.slot.selected { border-color: var(--primary); background: var(--primary-lt); }
+.slot-time { font-size: 13px; font-weight: 600; color: var(--text-1); }
+
+.modal-footer { padding: 18px 30px; background: var(--surface-2); border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.modal-footer-info { font-size: 12px; color: var(--text-3); font-weight: 500;}
+.modal-footer-actions { display: flex; gap: 10px; }
+.btn-ghost { padding: 10px 18px; border-radius: 10px; background: transparent; border: 1px solid var(--border-md); font-family: var(--ff-body); font-size: 13px; font-weight: 600; color: var(--text-2); cursor: pointer; transition: all 0.15s; }
+.btn-ghost:hover { background: var(--surface-3); }
+.btn-primary { padding: 10px 22px; border-radius: 10px; background: var(--primary); border: none; color: #fff; font-family: var(--ff-body); font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 7px; transition: all 0.15s; }
+.btn-primary:hover { background: var(--primary-dk); }
+
+.confirm-overlay { position: fixed; inset: 0; z-index: 600; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.confirm-overlay.open { opacity: 1; pointer-events: all; }
+.confirm-box { background: var(--surface); border-radius: var(--radius-lg); padding: 30px; max-width: 380px; width: 100%; box-shadow: var(--shadow-md); transform: scale(0.94); transition: transform 0.2s cubic-bezier(0.22,1,0.36,1); text-align: center; }
+.confirm-overlay.open .confirm-box { transform: scale(1); }
+.confirm-icon { width: 56px; height: 56px; border-radius: 50%; background: #FEF2F2; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; }
+.confirm-title { font-family: var(--ff-display); font-size: 18px; font-weight: 600; color: var(--text-1); margin-bottom: 8px; }
+.confirm-body { font-size: 13.5px; color: var(--text-2); line-height: 1.6; margin-bottom: 22px; }
+.confirm-actions { display: flex; gap: 10px; }
+.btn-danger { flex: 1; padding: 12px; border-radius: 10px; background: #E11D48; border: none; color: #fff; font-family: var(--ff-body); font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+.btn-danger:hover { background: #BE123C; }
+.btn-ghost-full { flex: 1; padding: 12px; border-radius: 10px; background: var(--surface-3); border: 1px solid var(--border); font-family: var(--ff-body); font-size: 14px; font-weight: 600; color: var(--text-2); cursor: pointer; transition: background 0.15s; }
+.btn-ghost-full:hover { background: var(--surface-2); }
+
+.toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--navy); color: #fff; border-radius: 12px; padding: 13px 20px; display: flex; align-items: center; gap: 10px; font-size: 13.5px; font-weight: 500; box-shadow: 0 8px 32px rgba(0,0,0,0.25); z-index: 700; transition: transform 0.35s cubic-bezier(0.22,1,0.36,1), opacity 0.35s; opacity: 0; white-space: nowrap; }
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+.toast-icon { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.toast-icon-ok { background: rgba(16,185,129,0.25); color: #10B981; }
+.toast-icon-err { background: rgba(225,29,72,0.25); color: #E11D48; }
+
+@media (max-width: 1100px) { .main-layout { grid-template-columns: 1fr; } .sidebar { position: static; } }
+@media (max-width: 860px) { .services-grid { grid-template-columns: 1fr; } .agencies-row { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 600px) { .hero { padding: 40px 20px 44px; } .main-layout { padding: 24px 20px 48px; } .navbar { padding: 0 18px; } .nav-profile-info { display: none; } }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-brand">
+    <div class="nav-logomark">C</div>
+    <div class="nav-brand-text">
+      <span class="nav-brand-name">Civic<em>Connect</em></span>
+      <span class="nav-portal-tag">Citizen Portal</span>
+    </div>
+  </div>
+
+  <div class="nav-actions">
+    <button class="nav-notif" aria-label="Notifications" onclick="showToast('You are connected to live databases!', 'ok')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+      <div class="nav-notif-dot"></div>
+    </button>
+
+    <div class="nav-profile" id="profileBtn" onclick="toggleDropdown()">
+      <div class="nav-profile-info">
+        <div class="nav-profile-name" id="uiProfileName">Loading...</div>
+        <div class="nav-profile-role">Verified Citizen</div>
+      </div>
+      <div class="nav-avatar" id="uiProfileInitials">--</div>
+
+      <div class="profile-dropdown" id="profileDropdown">
+        <div class="pd-header">
+          <div class="pd-name" id="ddProfileName">Loading...</div>
+          <div class="pd-id" id="ddProfileId">PhilSys ID: Loading...</div>
+        </div>
+        <a href="#" class="pd-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          My Profile
+        </a>
+        <div class="pd-sep"></div>
+        <a href="#" class="pd-item danger" onclick="firebase.auth().signOut()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign Out
+        </a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="page">
+  <section class="hero">
+    <div class="hero-dotgrid"></div>
+    <div class="hero-inner">
+      <div class="hero-eyebrow anim-0">
+        <div class="hero-eyebrow-dot"></div>
+        Welcome to your Government Portal
+      </div>
+      <h1 class="hero-greeting anim-1" id="uiGreeting">
+        Good morning,<br><em>Citizen.</em>
+      </h1>
+      <p class="hero-subtext anim-2">
+        Access all your government services in one place. Book appointments and manage your documents securely.
+      </p>
+      <div class="search-wrap anim-3">
+        <div class="search-bar">
+          <div class="search-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
+          <input class="search-input" type="text" id="searchInput" placeholder="Search for agencies, services, or documents..." autocomplete="off" oninput="handleSearch()">
+          <button class="search-btn" onclick="handleSearch()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Search
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="main-layout">
+    <div class="main-content">
+      
+      <div class="anim-2">
+        <div class="section-hd" style="margin-bottom:16px;">
+          <div>
+            <div class="section-title">Government Agencies</div>
+            <div class="section-subtitle">Tap an agency to browse their services</div>
+          </div>
+        </div>
+        <div class="agencies-row" id="agenciesContainer">
+          <div style="font-size: 13px; color: var(--text-3);">Loading active agencies...</div>
+        </div>
+      </div>
+
+      <div class="anim-3">
+        <div class="section-hd" style="margin-top:20px;">
+          <div>
+            <div class="section-title">Available Services</div>
+            <div class="section-subtitle">Click a service card to book an appointment</div>
+          </div>
+        </div>
+        <div class="services-grid" id="servicesGrid">
+          <div style="font-size: 13px; color: var(--text-3);">Loading configured services from the cloud...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar: Upcoming Appointments -->
+    <aside class="sidebar">
+      <div class="widget anim-2">
+        <div class="widget-hd">
+          <div class="widget-title">Upcoming</div>
+        </div>
+        <div class="widget-body">
+          <div class="appt-list" id="myAppointmentsContainer">
+            <div style="font-size: 13px; color: var(--text-3);">Checking your bookings...</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- ════ BOOKING MODAL ════ -->
+<div class="modal-overlay" id="bookModal" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header" id="modalHeader">
+      <button class="modal-close" onclick="closeModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="modal-agency-row">
+        <div class="modal-agency-icon" id="modalIcon">--</div>
+        <div>
+          <div class="modal-agency-label" id="modalAgencyLabel">Agency</div>
+          <div class="modal-svc-name" id="modalSvcName">Service Name</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-steps">
+      <div class="modal-step active" id="step1tab"><div class="modal-step-num">1</div><div class="modal-step-label">Choose Date</div></div>
+      <div class="modal-step" id="step2tab"><div class="modal-step-num">2</div><div class="modal-step-label">Pick Time</div></div>
+      <div class="modal-step" id="step3tab"><div class="modal-step-num">3</div><div class="modal-step-label">Confirm</div></div>
+    </div>
+
+    <div class="modal-body" id="modalBody"></div>
+
+    <div class="modal-footer">
+      <div class="modal-footer-info" id="modalFooterInfo">Select a date to continue</div>
+      <div class="modal-footer-actions">
+        <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn-primary" id="modalNextBtn" onclick="modalNext()">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ CANCEL CONFIRMATION MODAL ════ -->
+<div class="confirm-overlay" id="cancelConfirm" onclick="handleCancelOverlay(event)">
+  <div class="confirm-box">
+    <div class="confirm-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E11D48" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </div>
+    <div class="confirm-title">Cancel Appointment?</div>
+    <div class="confirm-body">
+      You are about to cancel this appointment. This action cannot be undone and your slot will be returned to the system.
+    </div>
+    <div class="confirm-actions">
+      <button class="btn-ghost-full" onclick="closeCancel()">Keep It</button>
+      <button class="btn-danger" id="cancelSubmitBtn" onclick="confirmCancel()">Yes, Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <div class="toast-icon toast-icon-ok" id="toastIcon">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  </div>
+  <span id="toastMsg">Action completed</span>
+</div>
+
+<!-- ════ FIREBASE INITIALIZATION & LOGIC ════ -->
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBl7Pu5rA2OrOMM8L_A_fQqiEex2H6cKGk",
+    authDomain: "civicconnect-933d3.firebaseapp.com",
+    projectId: "civicconnect-933d3",
+    storageBucket: "civicconnect-933d3.firebasestorage.app",
+    messagingSenderId: "326496710020",
+    appId: "1:326496710020:web:73b89f27349376367801d1"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  let currentUserAuth = null;
+  let currentUserDoc = null;
+  let allTenants = [];
+
+  // ─── AUTHENTICATION CHECK ───
+  auth.onAuthStateChanged((user) => {
+    if (!user) {
+      window.location.replace('citizen_login.html');
+    } else {
+      currentUserAuth = user;
+      db.collection("citizens").doc(user.uid).get().then(doc => {
+        if(doc.exists) {
+          currentUserDoc = doc.data();
+          const firstName = currentUserDoc.fullName.split(' ')[0];
+          const initials = currentUserDoc.fullName.match(/\b(\w)/g).join('').substring(0,2).toUpperCase();
+          
+          document.getElementById('uiGreeting').innerHTML = `Good morning,<br><em>${firstName}.</em>`;
+          document.getElementById('uiProfileName').textContent = currentUserDoc.fullName;
+          document.getElementById('uiProfileInitials').textContent = initials;
+          document.getElementById('ddProfileName').textContent = currentUserDoc.fullName;
+          document.getElementById('ddProfileId').textContent = "PhilSys ID: " + currentUserDoc.citizenID;
+
+          loadAgenciesAndServices();
+          loadMyBookings();
+        }
+      });
+    }
+  });
+
+  // ─── LOAD DATA FROM ADMIN FILING CABINETS ───
+  function loadAgenciesAndServices() {
+    const agContainer = document.getElementById('agenciesContainer');
+    const svcContainer = document.getElementById('servicesGrid');
+    agContainer.innerHTML = '';
+    svcContainer.innerHTML = '';
+
+    // Step 1: Find all agencies
+    db.collection('tenants').where('status', '==', 'Operational').get().then(snap => {
+      allTenants = snap.docs.map(d => ({id: d.id, ...d.data()}));
+      
+      allTenants.forEach(tenant => {
+        const agCode = tenant.sysCode.split('-')[0] || tenant.orgName.substring(0,3).toUpperCase();
+        
+        // Render Agency Chip
+        agContainer.innerHTML += `
+          <div class="agency-chip" data-target="${agCode}" onclick="filterBy('${agCode}', this)">
+            <div class="agency-chip-icon">${agCode}</div>
+            <div class="agency-chip-info">
+              <div class="agency-chip-name">${tenant.orgName}</div>
+              <div class="agency-chip-count">${tenant.branchName}</div>
+            </div>
+          </div>
+        `;
+
+        // Step 2: For each agency, find their active services
+        db.collection('tenants').doc(tenant.id).collection('services').where('status','==','active').get().then(svcSnap => {
+          svcSnap.forEach(sDoc => {
+            const svc = sDoc.data();
+            
+            // SAFELY ESCAPE APOSTROPHES IN NAMES
+            const safeOrgName = tenant.orgName.replace(/'/g, "\\'");
+            const safeSvcName = svc.name.replace(/'/g, "\\'");
+            
+            // Render Service Card
+            svcContainer.innerHTML += `
+              <div class="svc-card" data-agency="${agCode}" onclick="openBookModal('${tenant.id}', '${safeOrgName}', '${agCode}', '${safeSvcName}')">
+                <div class="svc-card-head">
+                  <div class="svc-icon">${agCode}</div>
+                  <div class="svc-meta-top"><span class="badge badge-green badge-dot">Available</span></div>
+                </div>
+                <div class="svc-card-body">
+                  <div class="svc-agency">${tenant.orgName} — ${tenant.branchName}</div>
+                  <div class="svc-name">${svc.name}</div>
+                  <div class="svc-desc">${svc.description}</div>
+                  <div class="svc-info-row">
+                    <div class="svc-info-item">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      ~${svc.duration} min
+                    </div>
+                    <div class="svc-info-item">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                      ${svc.slots} slots today
+                    </div>
+                  </div>
+                </div>
+                <button class="svc-book-btn">Book Appointment</button>
+              </div>
+            `;
+          });
+        });
+      });
+    });
+  }
+
+  // ─── LOAD MY BOOKINGS ───
+  function loadMyBookings() {
+    const list = document.getElementById('myAppointmentsContainer');
+    
+    db.collection('citizens').doc(currentUserAuth.uid).collection('appointments')
+      .orderBy('timestamp', 'desc').onSnapshot(snap => {
+        list.innerHTML = '';
+        if (snap.empty) {
+          list.innerHTML = '<div style="font-size: 13px; color: var(--text-3);">You have no upcoming appointments.</div>';
+          return;
+        }
+
+        snap.forEach(doc => {
+          const b = doc.data();
+          let badgeClass = 'badge-gray';
+          let statusText = 'Pending';
+          let cancelBtn = '';
+          
+          if(b.status === 'serving') { badgeClass = 'badge-orange'; statusText = 'Serving Now'; }
+          if(b.status === 'completed') { badgeClass = 'badge-green'; statusText = 'Completed'; }
+          if(b.status === 'no-show' || b.status === 'cancelled') { badgeClass = 'badge-red'; statusText = b.status.charAt(0).toUpperCase() + b.status.slice(1); }
+
+          // Only allow cancellation if pending
+          if(b.status === 'pending') {
+            cancelBtn = `<div class="appt-chevron" title="Cancel Appointment" onclick="openCancel('${b.ticketNumber}', '${b.tenantId}')">
+                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                         </div>`;
+          }
+
+          list.innerHTML += `
+            <div class="appt-item">
+              <div class="appt-accent" style="${b.status === 'cancelled' ? 'background:#E11D48;' : ''}"></div>
+              <div class="appt-content">
+                <div class="appt-row1">
+                  <span class="appt-agency">${b.agencyCode}</span>
+                  <span class="badge ${badgeClass}">${statusText}</span>
+                </div>
+                <div class="appt-svc" style="${b.status === 'cancelled' ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${b.serviceName}</div>
+                <div class="appt-row2">
+                  <div class="appt-meta">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    ${b.date}
+                  </div>
+                  <div class="appt-meta">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    ${b.time}
+                  </div>
+                </div>
+              </div>
+              ${cancelBtn}
+            </div>
+          `;
+        });
+      });
+  }
+
+
+  // ─── BOOKING MODAL LOGIC ───
+  let modalStep = 1;
+  let selectedDate = null;
+  let selectedSlot = null;
+  let activeBookingData = {}; 
+
+  function openBookModal(tenantId, agencyName, agCode, svcName) {
+    modalStep = 1; selectedDate = null; selectedSlot = null;
+    activeBookingData = { tenantId: tenantId, agencyName: agencyName, agencyCode: agCode, serviceName: svcName };
+    document.getElementById('modalAgencyLabel').textContent = agencyName;
+    document.getElementById('modalSvcName').textContent = svcName;
+    document.getElementById('modalIcon').textContent = agCode;
+    updateStepTabs(); renderStep();
+    document.getElementById('bookModal').classList.add('open');
+  }
+
+  function closeModal() { document.getElementById('bookModal').classList.remove('open'); }
+  function handleOverlayClick(e) { if (e.target === document.getElementById('bookModal')) closeModal(); }
+
+  function updateStepTabs() {
+    [1,2,3].forEach(i => {
+      const tab = document.getElementById('step'+i+'tab');
+      tab.classList.remove('active','done');
+      if (i === modalStep) tab.classList.add('active');
+      else if (i < modalStep) tab.classList.add('done');
+      
+      const numEl = tab.querySelector('.modal-step-num');
+      if (i < modalStep) numEl.innerHTML = '✓'; else numEl.textContent = i;
+    });
+  }
+
+  function modalNext() {
+    if (modalStep === 1 && !selectedDate) { showToast('Please select a date', 'err'); return; }
+    if (modalStep === 2 && !selectedSlot) { showToast('Please select a time slot', 'err'); return; }
+    
+    if (modalStep === 3) {
+      // ════ FINAL CONFIRM: FAN-OUT TO FIREBASE ════
+      const btn = document.getElementById('modalNextBtn');
+      btn.innerHTML = 'Processing...'; btn.style.opacity = '0.7';
+
+      // Generate Ticket Number (Used as Document ID!)
+      const ticketNum = `${activeBookingData.agencyCode}-${Math.floor(Math.random()*900+100)}`;
+      
+      const bookingPayload = {
+        citizenUid: currentUserAuth.uid,
+        citizenName: currentUserDoc.fullName,
+        citizenID: currentUserDoc.citizenID,
+        serviceName: activeBookingData.serviceName,
+        agencyCode: activeBookingData.agencyCode,
+        tenantId: activeBookingData.tenantId, // IMPORTANT: Save this to allow cancellation later!
+        status: "pending",
+        date: selectedDate,
+        time: selectedSlot,
+        ticketNumber: ticketNum,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      // Use ticketNum as the specific document ID in BOTH collections. This allows Two-Way Sync!
+      const adminWrite = db.collection('tenants').doc(activeBookingData.tenantId).collection('bookings').doc(ticketNum).set(bookingPayload);
+      const citizenWrite = db.collection('citizens').doc(currentUserAuth.uid).collection('appointments').doc(ticketNum).set(bookingPayload);
+
+      Promise.all([adminWrite, citizenWrite]).then(() => {
+        closeModal();
+        showToast('Appointment secured successfully!', 'ok');
+      }).catch((err) => {
+        showToast('Error saving appointment.', 'err');
+        console.error(err);
+      });
+      return;
+    }
+    
+    modalStep++;
+    updateStepTabs(); renderStep();
+  }
+
+  const calData = { month: 'May 2026', unavail: [1,2,8,9,15,16,22,23,29,30], past: [1,2,3,4] };
+  function renderStep() {
+    const body = document.getElementById('modalBody');
+    const info = document.getElementById('modalFooterInfo');
+    const btn  = document.getElementById('modalNextBtn');
+
+    if (modalStep === 1) {
+      info.textContent = 'Select an available date'; btn.innerHTML = 'Next';
+      let html = `<div class="cal-header"><div class="cal-title">${calData.month}</div></div><div class="cal-grid" style="grid-template-columns: repeat(7, 1fr); gap: 4px;">`;
+      for (let d = 1; d <= 31; d++) {
+        let cls = 'cal-day';
+        if (calData.past.includes(d) || calData.unavail.includes(d)) cls += ' disabled';
+        if (selectedDate === 'May ' + d + ', 2026') cls += ' selected';
+        html += `<div class="${cls}" onclick="if(!this.classList.contains('disabled')) { selectedDate='May ${d}, 2026'; renderStep(); }">${d}</div>`;
+      }
+      body.innerHTML = html + `</div>`;
+    } 
+    else if (modalStep === 2) {
+      info.textContent = 'Choose a time slot'; btn.innerHTML = 'Next';
+      const times = ['8:00 AM','9:00 AM','10:00 AM','11:00 AM','1:00 PM','2:00 PM','3:00 PM'];
+      let html = `<div class="slots-grid">`;
+      times.forEach(t => {
+        const sel = selectedSlot === t ? 'selected' : '';
+        html += `<div class="slot ${sel}" onclick="selectedSlot='${t}'; renderStep();"><div class="slot-time">${t}</div></div>`;
+      });
+      body.innerHTML = html + `</div>`;
+    } 
+    else if (modalStep === 3) {
+      info.textContent = 'Review your booking'; btn.innerHTML = 'Confirm Booking';
+      body.innerHTML = `
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:16px;">
+          <div style="margin-bottom:8px;"><strong>Agency:</strong> ${activeBookingData.agencyName}</div>
+          <div style="margin-bottom:8px;"><strong>Service:</strong> ${activeBookingData.serviceName}</div>
+          <div style="margin-bottom:8px;"><strong>Date:</strong> ${selectedDate}</div>
+          <div><strong>Time:</strong> ${selectedSlot}</div>
+        </div>`;
+    }
+  }
+
+  // ─── CANCELLATION LOGIC (TWO-WAY SYNC) ───
+  let cancelTicketId = null;
+  let cancelTenantId = null;
+
+  function openCancel(ticketId, tenantId) {
+    cancelTicketId = ticketId;
+    cancelTenantId = tenantId;
+    document.getElementById('cancelConfirm').classList.add('open');
+  }
+
+  function closeCancel() {
+    document.getElementById('cancelConfirm').classList.remove('open');
+    cancelTicketId = null; cancelTenantId = null;
+  }
+
+  function handleCancelOverlay(e) { if (e.target === document.getElementById('cancelConfirm')) closeCancel(); }
+
+  function confirmCancel() {
+    if(!cancelTicketId || !cancelTenantId) return;
+    
+    const btn = document.getElementById('cancelSubmitBtn');
+    btn.textContent = "Cancelling...";
+    btn.style.opacity = "0.7";
+
+    // Because we used the ticketNumber as the Document ID, we can easily find and update both!
+    const adminUpdate = db.collection('tenants').doc(cancelTenantId).collection('bookings').doc(cancelTicketId).update({ status: 'cancelled' });
+    const citizenUpdate = db.collection('citizens').doc(currentUserAuth.uid).collection('appointments').doc(cancelTicketId).update({ status: 'cancelled' });
+
+    Promise.all([adminUpdate, citizenUpdate]).then(() => {
+      closeCancel();
+      btn.textContent = "Yes, Cancel";
+      btn.style.opacity = "1";
+      showToast('Appointment cancelled successfully', 'ok');
+    }).catch(err => {
+      console.error(err);
+      showToast('Error cancelling appointment', 'err');
+      btn.textContent = "Yes, Cancel";
+      btn.style.opacity = "1";
+    });
+  }
+
+  // ─── SEARCH & FILTER LOGIC ───
+  let currentFilterAgency = 'all';
+  function handleSearch() {
+    const term = document.getElementById('searchInput').value.toLowerCase();
+    const cards = document.querySelectorAll('.svc-card');
+    cards.forEach(c => {
+      const text = c.innerText.toLowerCase();
+      const cAgency = c.getAttribute('data-agency') || '';
+      let matchTerm = term === '' || text.includes(term);
+      let matchAgency = currentFilterAgency === 'all' || cAgency === currentFilterAgency;
+      c.style.display = (matchTerm && matchAgency) ? 'flex' : 'none';
+    });
+  }
+  function filterBy(agency, el) {
+    if (currentFilterAgency === agency) { currentFilterAgency = 'all'; el.classList.remove('active-agency'); } 
+    else { document.querySelectorAll('.agency-chip').forEach(c => c.classList.remove('active-agency')); el.classList.add('active-agency'); currentFilterAgency = agency; }
+    handleSearch();
+  }
+
+  // ─── MISC ───
+  function toggleDropdown() { document.getElementById('profileDropdown').classList.toggle('open'); }
+  document.addEventListener('click', e => { if (!document.getElementById('profileBtn').contains(e.target)) document.getElementById('profileDropdown').classList.remove('open'); });
+  let toastTimer; function showToast(msg, type) { const t = document.getElementById('toast'); const icon = document.getElementById('toastIcon'); document.getElementById('toastMsg').textContent = msg; icon.className = 'toast-icon toast-icon-' + type; icon.innerHTML = type === 'ok' ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3200); }
+</script>
+</body>
+</html>
